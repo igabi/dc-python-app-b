@@ -3,6 +3,30 @@ name: CI/CD
 on: push
 
 jobs:
+  versioning:
+    name: Versioning
+    runs-on: ubuntu-latest
+    ###if: github.event.pull_request.merged
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Get Next Version
+        id: semver
+        uses: ietf-tools/semver-action@v1
+        with:
+          token: ${{ github.token }}
+          branch: main
+
+      # - name: Create Release
+      #   uses: ncipollo/release-action@v1.12.0
+      #   with:
+      #     allowUpdates: true
+      #     draft: false
+      #     makeLatest: true
+      #     name: ${{ steps.semver.outputs.next }}
+      #     body: Changelog Contents
+      #     token: ${{ github.token }}
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -28,6 +52,13 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get Next Version
+        id: semver
+        uses: ietf-tools/semver-action@v1
+        with:
+          token: ${{ github.token }}
+          branch: main
+
       - name: Build and push the Docker image
         uses: docker/build-push-action@v4
         with:
@@ -35,5 +66,6 @@ jobs:
           tags: |
             ghcr.io/igabi/dc-python-app-b:latest
             ghcr.io/igabi/dc-python-app-b:${{ github.sha }}
+            ghcr.io/igabi/dc-python-app-b:${{ steps.semver.outputs.next }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
